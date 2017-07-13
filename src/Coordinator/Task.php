@@ -9,6 +9,8 @@
 namespace Joomla\Testing\Coordinator;
 
 use Joomla\Testing\Util\Command;
+use React\Promise\Deferred;
+use React\Promise\Promise;
 
 class Task
 {
@@ -28,15 +30,42 @@ class Task
 		$this->server = $server;
 	}
 
-	public function run($client){
+
+	public function asyncRun($client)
+	{
+		$deferred = new Deferred();
+
+		$deferred->promise()
+			->then(
+				function($result){
+					echo "success";
+					echo $result;
+				},
+				function($result){
+					echo "fail";
+					echo $result;
+				}
+				);
+
+		$deferred->resolve($this->run($client));
+	}
+
+	private function run($client)
+	{
 		$command = "docker exec $client /bin/sh -c \"cd /usr/src/tests/tests;vendor/bin/robo run:container-tests 
 					--single --test $this->codeceptionTask --server $this->server\"";
 
-		$result = Command::execute($command);
+		return Command::execute($command);
 	}
 
-	private function isSuccessfull($result){
+	private function success()
+	{
+		echo "success";
+	}
 
+	private function fail()
+	{
+		echo "fail";
 	}
 
 }

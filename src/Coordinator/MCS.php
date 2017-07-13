@@ -86,7 +86,7 @@ class MCS
 		$memcached->add(MCS::clientsNo, $clientsNo);
 		$memcached->add(MCS::serversNo, $serversNo);
 
-		var_dump($memcached->get(MCS::servers));
+		var_dump(unserialize($memcached->get(MCS::runQueue))->pop());
 	}
 
 	public function generateEnv($env, $dockyardPath)
