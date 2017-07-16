@@ -10,6 +10,7 @@ namespace Joomla\Testing\Coordinator;
 
 use Joomla\Testing\Util\Command;
 
+
 class Task
 {
 	private $codeceptionTask;
@@ -29,14 +30,12 @@ class Task
 	}
 
 	public function run($client){
-		$command = "docker exec $client /bin/sh -c \"cd /usr/src/tests/tests;vendor/bin/robo run:container-tests 
-					--single --test $this->codeceptionTask --server $this->server\"";
+//		$command = "docker exec $client /bin/sh -c \"cd /usr/src/tests/tests;vendor/bin/robo run:container-tests
+//					--single --test $this->codeceptionTask --server $this->server\"";
+
+		$command = JPATH_BASE . "/vendor/bin/robo run:client-task $this->codeceptionTask $this->server $client";
 
 		$result = Command::execute($command);
-	}
-
-	private function isSuccessfull($result){
-
 	}
 
 }

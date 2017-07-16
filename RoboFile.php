@@ -23,6 +23,9 @@ use Joomla\Testing\Docker\Container\TestContainer;
 use Joomla\Testing\Coordinator\SelectionList;
 use Joomla\Testing\Coordinator\MainCoordiantor;
 use Joomla\Testing\Coordinator\MCS;
+use GearmanClient;
+use GearmanWorker;
+use Joomla\Testing\Coordinator\Task;
 
 /**
  * Class RoboFile
@@ -226,6 +229,83 @@ class RoboFile extends \Robo\Tasks
 //		$coordinator->waitForDbInit();
 
 		//TODO start parallel testing
+
+	}
+
+	public function runClientTask($codeceptionTask, $server, $client){
+
+		$command = "docker exec $client /bin/sh -c \"cd /usr/src/tests/tests;vendor/bin/robo run:container-tests 
+					--single --test $codeceptionTask --server $server\"";
+
+		echo "ajungem aici";
+
+		$result = Command::execute($command);
+
+		if($result)
+		{
+			echo "success";
+		}
+		else
+		{
+			echo "fail";
+		}
+	}
+
+	public function runAsyncTest(){
+		// make sure the environment is up and running;
+
+		$server1 = "dockyard_apachev7p0v3p6_1";
+		$server2 = "dockyard_apachev7p1v3p6_1";
+		$server3 = "dockyard_apachev5p4v3p6_1";
+		$client1 = "dockyard_seleniumv0_1";
+		$client2 = "dockyard_seleniumv1_1";
+		$client3 = "dockyard_seleniumv2_1";
+
+		$codeceptionTask = "install/InstallWeblinksCest.php:installWeblinks";
+
+//		$task1 = new Task($codeceptionTask, $server1);
+//		$task2 = new Task($codeceptionTask, $server2);
+//		$task3 = new Task($codeceptionTask, $server3);
+
+//		$task1->run($client1);
+//		$task2->run($client2);
+//		$task3->run($client3);
+		$gmclient= new GearmanClient();
+
+		$gmclient->addServer();
+
+		$job_handle = $gmclient->doBackground("runTask", "$codeceptionTask, $server1, $client1");
+		$job_handle = $gmclient->doBackground("runTask", "$codeceptionTask, $server2, $client2");
+		$job_handle = $gmclient->doBackground("runTask", "$codeceptionTask, $server3, $client3");
+
+	}
+
+	public function startWorker()
+	{
+		$worker = new GearmanWorker();
+
+		$worker->addServer();
+
+		function runTask(GearmanJob $job)
+		{
+			$workload = $job->workload();
+			echo "Received job: " . $job->handle() . "\n";
+			echo "Workload: $workload\n";
+			$result = strrev($workload);
+			echo "Result: $result\n";
+			return $result;
+		}
+
+		$worker->addFunction("runTask", "runTask");
+
+		while (1) {
+			print "Waiting for job...\n";
+			$ret = $worker->work(); // work() will block execution until a job is delivered
+			if ($worker->returnCode() != GEARMAN_SUCCESS) {
+				break;
+			}
+		}
+
 
 	}
 
